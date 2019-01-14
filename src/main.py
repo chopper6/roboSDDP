@@ -18,6 +18,7 @@ def run(scen_choice, control, gain_choice, use_noise, iters):
         mean, covar = stoch_control.kalman_filter(mean, covar, u, z, A,B,C, noise_cov_mv, noise_cov_ms, control)
         xs.append(x)
         xestims.append(mean)
+        #if abs(x[1]) > 1000: break
     plot.state_estim(xs,xestims, control,scen_choice,gain_choice, use_noise)
     plot.control_err(us, errs, control, scen_choice, gain_choice, use_noise)
     return
@@ -55,12 +56,13 @@ if __name__ == "__main__":
     # controls: none, both, msmt, mvmt
 
     controls = ['both'] #, 'none','msmt','mvmt']
-    gain_choice = ['PD','PI','PID'] #['P','PD','PI','PID']
-    iters = 80
+    gain_choice = ['P','PD','PI','PID'] #,'PD2', 'PID2']
+    iters = 40
     use_noises = [False,True]
     #control = 'mvmt'
     scen_choice = 'drift'
     for control in controls:
         for gain in gain_choice:
             for use_noise in use_noises:
+                print("\n\nRUN: " + control + ', ' + gain + ', noise '  + str(use_noise) + "\n")
                 run(scen_choice, control, gain, use_noise, iters)

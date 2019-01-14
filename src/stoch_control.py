@@ -1,4 +1,4 @@
-import numpy as np
+import numpy as np, math
 
 
 def kalman_filter(mean, covar, u, z, A, B,C, noise_cov_mv, noise_cov_ms, control):
@@ -27,8 +27,8 @@ def kalman_filter(mean, covar, u, z, A, B,C, noise_cov_mv, noise_cov_ms, control
 
 def update_u(scenario, x_estim, control, gain_choice,errs):
     u=[0,0]
-    p_w, i_w, d_w = .2,.2,1
-    gain= calc_gain(p_w,i_w,d_w,errs,gain_choice)
+    p_w, i_w, d_w = .2,.4,.8
+    gain= calc_gain(p_w,i_w,d_w,errs, x_estim, gain_choice)
     if control == 'none': return u
     if scenario == 'sit still':
         u = -1*x_estim
@@ -38,18 +38,35 @@ def update_u(scenario, x_estim, control, gain_choice,errs):
     return u
 
 
-def calc_gain(curr_w, integral_w, deriv_w, errs, gain_choice):
+def calc_gain(curr_w, integral_w, deriv_w, errs, X, gain_choice):
     #discretized PID control, assumes dt = 1
     gain_p = -1*errs[-1]*curr_w
     if len(errs)>1:
-        gain_i = -1*sum(errs[:-1])*integral_w/(len(errs)-1) #all but most recent err term
+        gain_i = -1*np.sum(errs[:-1])*integral_w/(len(errs)-1) #all but most recent err term
         gain_d = -1*(errs[-1] - errs[-2]) * deriv_w
+
     else: return gain_p
+
+    if len(errs) > 2:
+        gain_d2 = -1*(errs[-3]-2*errs[-2]+errs[-1])*deriv_w
+        #gain_d2 = -1*(errs[-1] - errs[-3])*deriv_w
+        #gain_d2 = (gain_d2 + gain_d)/2
+        print("\ngain_d, gain_d2,  X[1], t")
+        print(gain_d, gain_d2, X[1], len(errs))
+        gain_d = -1*(errs[-1] - errs[-3])*deriv_w #TODO: clean this shit
+        #gain_d2 = (gain_d*(X[1]) + 2*gain_d2)/3
+        gain_d2 = -1*(gain_d*gain_d2*X[1])/abs(X[1]) #TODO: seems to control in right dir, but wrong magnitude
+        if gain_choice=='PD2': return gain_p + gain_d2
+        elif gain_choice=='PID2': return gain_p + gain_i + gain_d2
+
 
     if gain_choice=='P': gain = gain_p
     elif gain_choice=='PI': gain = gain_p + gain_i
-    elif gain_choice=='PD': gain= gain_p + gain_d
-    elif gain_choice=='PID': gain = gain_p + gain_i + gain_d
+    elif gain_choice=='PD' or gain_choice == 'PD2': gain= gain_p + gain_d
+    elif gain_choice=='PID' or gain_choice == 'PID2': gain = gain_p + gain_i + gain_d
+
+
+
     else: assert(False)
     #print("\nerr = " + str(errs[-1]))
     #print("gain = " + str(gain)) #, gain_p, gain_i, gain_d: ")
