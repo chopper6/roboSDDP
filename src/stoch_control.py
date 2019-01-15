@@ -25,26 +25,34 @@ def kalman_filter(mean, covar, u, z, A, B,C, noise_cov_mv, noise_cov_ms, control
 
 
 
-def update_u(scenario, x_estim, control, gain_choice,errs):
-    u=[0,0]
+def update_u(scenario, x_estim, control, gain_choice,errs, u, x):
+    new_u=[0,0]
     p_w, i_w, d_w = .2,.4,.8
-    gain= calc_gain(p_w,i_w,d_w,errs, x_estim, gain_choice)
-    if control == 'none': return u
+    gain= calc_gain(p_w,i_w,d_w,errs, x_estim, gain_choice, u, x)
+    if control == 'none': return new_u
     if scenario == 'sit still':
-        u = -1*x_estim
+        new_u = -1*x_estim
     elif scenario == 'drift':
-        u = [0,gain] #*(x_estim[1]+x_estim[0])] #control vel based on estim position
+        new_u = [0,gain] #*(x_estim[1]+x_estim[0])] #control vel based on estim position
     else: assert(False)
-    return u
+
+    return new_u
 
 
-def calc_gain(curr_w, integral_w, deriv_w, errs, X, gain_choice):
+def calc_gain(curr_w, integral_w, deriv_w, errs, X, gain_choice, u, x):
     #discretized PID control, assumes dt = 1
+    # TODO: apparently suppoed to use u += gain...but this works horribly
+    # TODO: really -= gain, since curr formula is -ve
+    # TODO: will need to change deriv term for changing target, use derivative-on-measurement PID form
+    # integral term tends to grow over time, ie isn't normzd by lng, but this isn't intuitive at all
+
+    # TODO: err is currently x[0] + x[1], but problems seem to be def'd with err = X[i] for gain[i]
+
     verbose = False
 
     gain_p = -1*errs[-1]*curr_w
     if len(errs)>1:
-        gain_i = -1*np.sum(errs[:-1])*integral_w/(len(errs)-1) #all but most recent err term
+        gain_i = -1*np.sum(errs)*integral_w/(len(errs)-1) #all but most recent err term
         gain_d = -1*(errs[-1] - errs[-2]) * deriv_w
     else: return gain_p
 

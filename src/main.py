@@ -1,3 +1,5 @@
+# TODO: in general, seem to be over-complicating with the velocity 1-step-behind to control position game
+
 import numpy as np, math
 import plot, stoch_control, scenario
 
@@ -5,10 +7,11 @@ def run(scen_choice, control, gain_choice, use_noise, iters):
     verbose = False
     xs, xestims, errs, us = [],[],[], []
     A,B,C, x, mean, covar, noise_cov_mv, noise_cov_ms = scenario.generate(scen_choice, use_noise)
+    u = [0,0]
     #print_shapes([A,B,C,x,mean,covar], 'A,B,C,x,mean,cov')
     for i in range(iters):
         errs.append(calc_err(scen_choice, mean))
-        u = stoch_control.update_u(scen_choice,mean,control,gain_choice, errs) #where mean is x_estim #TODO check order
+        u = stoch_control.update_u(scen_choice,mean,control,gain_choice, errs, u, x) #where mean is x_estim #TODO check order
         us.append(u)
 
         x = move(A,x,B,u, use_noise)
@@ -46,7 +49,8 @@ def measure(C,x, use_noise):
 def calc_err(scenario,mean):
     #where mean is x_hat
     # MSE
-    err = (mean[0] + mean[1]) #np.linalg.norm(mean)/len(mean)
+    #TODO: curr specific to goal as X = 0
+    err = (mean[1]) #np.linalg.norm(mean)/len(mean)
     return err
 
 
@@ -56,7 +60,7 @@ if __name__ == "__main__":
     # controls: none, both, msmt, mvmt
 
     controls = ['both'] #, 'none','msmt','mvmt']
-    gain_choice = ['P','PD2','PI','PID2'] #,'PD2', 'PID2']
+    gain_choice = ['P','PD','PI','PID'] #,'PD2', 'PID2']
     iters = 400
     use_noises = [False,True]
     #control = 'mvmt'
