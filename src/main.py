@@ -56,8 +56,8 @@ if __name__ == "__main__":
     # controls: none, both, msmt, mvmt
 
     controls = ['both'] #, 'none','msmt','mvmt']
-    gain_choice = ['P','PD','PI','PID'] #,'PD2', 'PID2']
-    iters = 40
+    gain_choice = ['P','PD2','PI','PID2'] #,'PD2', 'PID2']
+    iters = 400
     use_noises = [False,True]
     #control = 'mvmt'
     scen_choice = 'drift'
