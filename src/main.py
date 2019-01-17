@@ -10,7 +10,7 @@ def run(scen_choice, control, gain_choice, use_noise, iters):
     u = [0,0]
     #print_shapes([A,B,C,x,mean,covar], 'A,B,C,x,mean,cov')
     for i in range(iters):
-        errs.append(calc_err(scen_choice, mean))
+        errs.append(calc_err(scen_choice, mean, i))
         u = stoch_control.update_u(scen_choice,mean,control,gain_choice, errs, u, x) #where mean is x_estim #TODO check order
         us.append(u)
 
@@ -46,11 +46,13 @@ def measure(C,x, use_noise):
     return z
 
 
-def calc_err(scenario,mean):
+def calc_err(scenario,mean, iter):
     #where mean is x_hat
     # MSE
     #TODO: curr specific to goal as X = 0
-    err = (mean[1]) #np.linalg.norm(mean)/len(mean)
+    if scenario == 'drift' or scenario == 'sit still': err = (mean[1]) #np.linalg.norm(mean)/len(mean)
+    elif scenario == 'sint': err = abs(math.sin(iter)-mean[1])
+    else: assert(False)
     return err
 
 
@@ -59,9 +61,9 @@ if __name__ == "__main__":
     # scenarios: sit still, drift
     # controls: none, both, msmt, mvmt
 
-    controls = ['both'] #, 'none','msmt','mvmt']
+    controls = ['both'] #, 'none'] #, 'none','msmt','mvmt']
     gain_choice = ['P','PD','PI','PID'] #,'PD2', 'PID2']
-    iters = 400
+    iters = 40
     use_noises = [False,True]
     #control = 'mvmt'
     scen_choice = 'drift'

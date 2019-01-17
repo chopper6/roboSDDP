@@ -7,7 +7,7 @@ def state_estim(xs, xestims, control, scenario, gain_choice, use_noise):
     else: noise = "noNoise"
 
     if scenario == 'sit still': titles = ['x','y']
-    elif scenario == 'drift': titles = ['position','velocity']
+    elif scenario == 'drift' or scenario == 'sint': titles = ['position','velocity']
     else: assert(False)
 
     dirname = os.getcwd()
@@ -41,7 +41,7 @@ def control_err(us, errs, control_name, scenario, gain_choice, use_noise):
     else: noise = "noNoise"
 
     if scenario == 'sit still': titles = ['x','y']
-    elif scenario == 'drift': titles = ['position','velocity']
+    elif scenario == 'drift' or scenario == 'sint': titles = ['position','velocity']
     else: assert(False)
 
     dirname = os.getcwd()

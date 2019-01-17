@@ -33,7 +33,11 @@ def update_u(scenario, x_estim, control, gain_choice,errs, u, x):
     if scenario == 'sit still':
         new_u = -1*x_estim
     elif scenario == 'drift':
-        new_u = [0,gain] #*(x_estim[1]+x_estim[0])] #control vel based on estim position
+        new_u = [0, gain] #-2*x[1]-x[0]]
+        #new_u = [0,gain] #*(x_estim[1]+x_estim[0])] #control vel based on estim position
+    elif scenario == 'sint':
+        new_u = [0, gain] #TODO: if robo 'knows' it should follow sint, easy. But say it doesn't...
+
     else: assert(False)
 
     return new_u
