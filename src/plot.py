@@ -2,15 +2,15 @@ import os, numpy as np, math
 from matplotlib import pyplot as plt
 
 
-def key():
+def key(run_name):
 
     dirname = os.getcwd()
-    plot_dir = dirname + '/output/plots/'
+    plot_dir = dirname + '/output/' + str(run_name) + '_plots/'
     plt.title('TYPE OF PLOT, PARAMETER (control type, PID type, noise)')
     plt.savefig(plot_dir + '/A_KEY.png')
     plt.clf()
 
-def state_estim(xs, xestims, targets, control, scenario, gain_choice, use_noise):
+def state_estim(run_name, xs, xestims, targets, control, scenario, gain_choice, use_noise):
     xs, xestims = np.array(xs), np.array(xestims)
     if use_noise: noise = 'noisy'
     else: noise = "noNoise"
@@ -18,7 +18,7 @@ def state_estim(xs, xestims, targets, control, scenario, gain_choice, use_noise)
     titles = gen_titles(scenario)
 
     dirname = os.getcwd()
-    plot_dir = dirname + '/output/plots/'
+    plot_dir = dirname + '/output/' + str(run_name) + '_plots/'
     if not os.path.exists(plot_dir):
         os.makedirs(plot_dir)
     for i in range(len(xs[0])):
@@ -56,7 +56,7 @@ def state_estim(xs, xestims, targets, control, scenario, gain_choice, use_noise)
 
 
 
-def control_err(us,  estim_errs, actual_errs, targets, control_name, scenario, gain_choice, use_noise):
+def control_err(run_name, us,  estim_errs, actual_errs, targets, control_name, scenario, gain_choice, use_noise):
     us, estim_errs, actual_errs = np.array(us), np.array(estim_errs), np.array(actual_errs)
     if use_noise: noise = 'noisy'
     else: noise = "noNoise"
@@ -64,7 +64,7 @@ def control_err(us,  estim_errs, actual_errs, targets, control_name, scenario, g
     titles = gen_titles(scenario)
 
     dirname = os.getcwd()
-    plot_dir = dirname + '/output/plots/'
+    plot_dir = dirname + '/output/' + str(run_name) + '_plots/'
     if not os.path.exists(plot_dir):
         os.makedirs(plot_dir)
     for i in range(len(us[0])):
@@ -73,6 +73,8 @@ def control_err(us,  estim_errs, actual_errs, targets, control_name, scenario, g
         ymax = max(max(control),max(estim_errs), max(actual_errs))
         ymin = min(min(control),min(estim_errs), min(actual_errs))
         yabs = max(abs(ymax), abs(ymin))
+        if yabs == 0:
+            ymax = ymin = yabs =.04
         ticks = [j for j in range(len(control))]
         MSE_actual = np.sum(actual_errs)/len(actual_errs)
         MSE_estim = np.sum(estim_errs)/len(estim_errs)
@@ -94,9 +96,9 @@ def control_err(us,  estim_errs, actual_errs, targets, control_name, scenario, g
         plt.savefig(plot_dir + '/control_' + str(control_name) + '_gain_' + str(gain_choice) + '_noise_' + str(noise) + '_param_' + titles[i] + '_controlAndError.png')
         plt.clf()
 
-def Kalman_weight(Ks, control_name, scenario, gain_choice, use_noise):
+def Kalman_weight(run_name, Ks, control_name, scenario, gain_choice, use_noise):
     dirname = os.getcwd()
-    plot_dir = dirname + '/output/plots/'
+    plot_dir = dirname + '/output/' + str(run_name) + '_plots/'
     Ks = np.array(Ks)
     label = gen_label(control_name, scenario, gain_choice, use_noise)
     titles = gen_titles(scenario)
