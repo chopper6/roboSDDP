@@ -35,13 +35,14 @@ def state_estim(run_name, xs, xestims, targets, control, scenario, gain_choice, 
         #plt.text(0,ymax-yabs/8,"Mean dist from origin = " + str(MSD), color='red')
         plt.plot(ticks,param, color='blue', label='actual', alpha=.6)
         plt.plot(ticks,param_estim, color='green', label='estimated', alpha=.8, linestyle='-.')
-        if i==0 or i==2: #ie position
+        if i==0 or i==3: #ie position
             scen = scenario.split(' ')
-            if scen[0] == '2D':
+            if scen[0] == '2D' or scen[0] == '2D3':
                 if i ==0: target_vec = targets[:,0]
                 else: target_vec = targets[:,1]
             else: target_vec = targets
-            plt.plot(ticks, target_vec, color='purple', label='targets', alpha=.7, linestyle=':')
+
+            plt.plot(ticks, target_vec[:-1], color='purple', label='targets', alpha=.7, linestyle=':')
             #var_targets = np.linalg.norm(targets)
             var_targets = 0
             for k in range(len(target_vec)-1):
@@ -83,7 +84,7 @@ def control_err(run_name, us,  estim_errs, actual_errs, targets, control_name, s
         plt.plot(ticks,control, color='#33cccc', label='control choice', alpha=1, linestyle=':')
         plt.plot(ticks,estim_errs, color='purple', label='perceived error', alpha=.6, linestyle='-.')
         scen = scenario.split(' ')
-        if scen[0] == '2D':
+        if scen[0] == '2D' or scen[0]=='2D3':
             plt.text(0,ymax,"Actual avg MSE of positions (x and y) = " + str(MSE_actual), color='red')
             plt.text(0, ymax - yabs / 8, "Estimated avg MSE of position (x and y) = " + str(MSE_estim), color='purple')
 
@@ -133,6 +134,9 @@ def gen_titles(scenario):
 
     elif scen_d[0] == '2D':
         titles = ['x position', 'x velocity', 'y position', 'y velocity']
+
+    elif scen_d[0] == '2D3':
+        titles = ['x position', 'x velocity', 'x acceleration', 'y position', 'y velocity', 'y acceleration']
     else:  titles = ['position','velocity']
     #else: assert(False)
     return titles

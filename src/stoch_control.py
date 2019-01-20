@@ -32,9 +32,12 @@ def kalman_filter(mean, covar, u, z, x, A, B,C, noise_cov_mv, noise_cov_ms, cont
 def update_u(scenario, x_estim, control, gain_choice,errs, u, x, iter, targets):
     new_u=[0 for i in range(len(u))]
     scen_d = scenario.split(' ')
-    use_PID = False #TODO?
-    p_w, i_w, d_w = .1,.2,.4
-    if use_PID: gain= calc_gain(p_w,i_w,d_w,errs, x_estim, gain_choice, u, x) #TODO: PID control?
+    p_w, i_w, d_w = .2,.2,.2
+
+    gain_choice = 'None'
+    if gain_choice != 'None': gain= calc_gain(p_w,i_w,d_w,errs, x_estim, gain_choice, u, x)
+    else: gain = 0
+
     if control == 'none': return new_u
     if scenario == 'sit still':
         new_u = -1*x_estim
@@ -46,6 +49,10 @@ def update_u(scenario, x_estim, control, gain_choice,errs, u, x, iter, targets):
 
     elif scen_d[0] == '2D':
         new_u = [0, targets[iter,0] - x_estim[1] - x_estim[0], 0, targets[iter,1] - x_estim[3] - x_estim[2]]
+
+    elif scen_d[0] == '2D3':
+        #new_u = [0, 0, (1/3)*targets[iter+1,0]-(1/3)*x_estim[0]-(2/3)*x_estim[1], 0,0, (1/3)*targets[iter+1,1] - (1/3)*x_estim[3] - (2/3)*x_estim[4]]
+        new_u = [0, 0, targets[iter+1,0]-x_estim[0]-2*x_estim[1] - x_estim[2] - gain, 0,0, targets[iter+1,1] - x_estim[3] - 2*x_estim[4] - x_estim[5] - gain]
 
     else: #if scenario == 'drift' or scenario == 'rude drift':
         #target = iter+1

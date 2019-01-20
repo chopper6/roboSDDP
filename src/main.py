@@ -7,12 +7,15 @@ import plot, stoch_control, scenario
 def run(scen_choice, target_trajectory, run_name, control, gain_choice, use_noise, iters, verbose=False):
     xs, xestims, estim_errs, actual_errs, us, Ks = [],[],[], [], [],[]
     A,B,C, x, mean, covar, noise_cov_mv, noise_cov_ms, targets = scenario.generate(scen_choice, use_noise, iters)
-
+    xs.append(x)
+    xestims.append(mean)
+    #estim_errs.append(0)
+    #actual_errs.append(0)
     if target_trajectory is not None: targets = target_trajectory # TODO: override with Jeremie's path
 
     u = [0 for i in range(len(x))]
     #print_shapes([A,B,C,x,mean,covar], 'A,B,C,x,mean,cov')
-    for i in range(iters):
+    for i in range(1,iters+1):
         estim_err, actual_err = calc_err(scen_choice, mean, x, i, targets)
         estim_errs.append(estim_err)
         actual_errs.append(actual_err)
@@ -32,6 +35,8 @@ def run(scen_choice, target_trajectory, run_name, control, gain_choice, use_nois
         Ks.append(K)
         xs.append(x)
         xestims.append(mean)
+
+
         #if abs(x[1]) > 1000: break
 
     plot.state_estim(run_name, xs,xestims,targets, control,scen_choice,gain_choice, use_noise)
@@ -58,7 +63,8 @@ def move(A,x,B,u, noise_cov_mv, use_noise):
 
     else: noise = np.array([0 for i in range(len(x))])
     x = x + np.dot(B,u)
-    if noise_type == 'add': x = np.dot(A,x) + noise
+    if noise_type == 'add':
+        x = np.dot(A,x) + noise
     elif noise_type == 'mult':
         x = np.dot(np.dot(A,x), noise)
     else: assert(False)
@@ -72,6 +78,7 @@ def measure(C,x, noise_cov_ms, use_noise):
     else: noise = np.array([0 for i in range(len(x))])
     z = np.dot(C,x)+noise
     return z
+
 
 
 def calc_err(scenario,mean, x, iter, targets):
@@ -111,13 +118,13 @@ if __name__ == "__main__":
     # scenarios: sit still, drift
     # controls: none, both, msmt, mvmt
 
-    controls = ['ideal','both', 'none', 'msmt','mvmt']
-    gain_choice = ['P'] #,'PD','PI','PID'] #,'PD2', 'PID2']
-    iters = 40
+    controls = ['both'] #, 'ideal', 'none', 'msmt','mvmt']
+    gain_choice = ['None','P','PD','PI','PID'] #,'PD2', 'PID2'] #TODO: gain_choice should be set to 'None' (String-type, capital)
+    iters = 16
     verbose=False
     use_noises = [True]
     target_trajectory = None
-    scen_choice = '2D rd path with drift'
+    scen_choice = '2D3 drift' #'2D rd path with drift' #TODO: should be '2D3 '
     run_name = 'a_run' #to make separate directories, for example, during presentation
 
     for control in controls:
