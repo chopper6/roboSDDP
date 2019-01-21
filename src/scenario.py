@@ -122,8 +122,42 @@ def generate(scenario, use_noise, iters):
         targets = np.array([[i+1,i+1] for i in range(iters+2)])
         x0, mean = [targets[0,0], 0,0,targets[0,1],0,0],[targets[0,0], 0,0,targets[0,1],0,0]
 
-        noise_cov_mv, noise_cov_ms = .2*np.eye(6), .2*np.eye(6)
+        noise_cov_mv, noise_cov_ms = .2*np.eye(6), .8*np.eye(6)
         #noise_cov_mv = noise_cov_mv.astype(float)*.1
+
+
+    elif scenario == '2D3 correlated axis':
+        A, B, C = np.array([[1,1,0,0,0,0], [0,1,1,0,0,0],[0,0,1,0,0,0],[0,0,0,1,1,0],[0,0,0,0,1,1],[0,0,0,0,0,1]])\
+            , np.array([[0 for i in range(6)], [0 for i in range(6)],[0,0,1,0,0,0],[0 for i in range(6)],[0 for i in range(6)],[0,0,0,0,0,1]])\
+            , np.eye(6)
+        covar = np.eye(6)
+        # static:
+        #targets = np.array([[0,0] for i in range(iters+2)])
+        #x0, mean = [1, 0,0,1,0,0],[1, 0,0,1,0,0]
+        targets = np.array([[i+1,i+1] for i in range(iters+2)])
+        x0, mean = [targets[0,0], 0,0,targets[0,1],0,0],[targets[0,0], 0,0,targets[0,1],0,0]
+
+        noise_cov_mv, noise_cov_ms = .2*np.array([[1,0,0,1,0,0], [0,1,0,0,1,0],[0,0,1,0,0,1],[1,0,0,1,0,0],[0,1,0,0,1,0],[0,0,1,0,0,1]]),\
+                                     .8*np.array([[1,0,0,1,0,0], [0,1,0,0,1,0],[0,0,1,0,0,1],[1,0,0,1,0,0],[0,1,0,0,1,0],[0,0,1,0,0,1]])
+        #noise_cov_mv = noise_cov_mv.astype(float)*.1
+
+
+
+    elif scenario == '2D3 drift acc':
+        A, B, C = np.array([[1,1,0,0,0,0], [0,1,1,0,0,0],[0,0,1,0,0,0],[0,0,0,1,1,0],[0,0,0,0,1,1],[0,0,0,0,0,1]])\
+            , np.array([[0 for i in range(6)], [0 for i in range(6)],[0,0,1,0,0,0],[0 for i in range(6)],[0 for i in range(6)],[0,0,0,0,0,1]])\
+            , np.eye(6)
+        covar = np.eye(6)
+        # static:
+        #targets = np.array([[0,0] for i in range(iters+2)])
+        #x0, mean = [1, 0,0,1,0,0],[1, 0,0,1,0,0]
+        targets = np.array([[math.pow(i+rd.uniform(-2,2),2)+1,math.pow(i+rd.uniform(-2,2),2)+1] for i in range(iters+2)])
+        x0, mean = [targets[0,0], 0,0,targets[0,1],0,0],[targets[0,0], 0,0,targets[0,1],0,0]
+        print("Scenario 141: using funky scenario, but why is err != 0 with noise?!")
+        noise_cov_mv, noise_cov_ms = .2*np.eye(6), .8*np.eye(6)
+        #noise_cov_mv = noise_cov_mv.astype(float)*.1
+
+
 
 
     else: assert(False)

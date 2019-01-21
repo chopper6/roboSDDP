@@ -2,9 +2,10 @@
 import numpy as np, math
 import plot, stoch_control, scenario
 
+#TODO: bug on y axis, only when stoch
+#TODO: double check traj off-by-one (in scen + plots)
 
-
-def run(scen_choice, target_trajectory, run_name, control, gain_choice, use_noise, iters, verbose=False):
+def run(scen_choice, target_trajectory, run_name, control, gain_choice, use_noise, iters, noise_type, cap_acc, verbose=False):
     xs, xestims, estim_errs, actual_errs, us, Ks = [],[],[], [], [],[]
     A,B,C, x, mean, covar, noise_cov_mv, noise_cov_ms, targets = scenario.generate(scen_choice, use_noise, iters)
     xs.append(x)
@@ -27,11 +28,11 @@ def run(scen_choice, target_trajectory, run_name, control, gain_choice, use_nois
             print("x_hat = " + str(mean))
             print("x = " + str(x))
 
-        x = move(A,x,B,u, noise_cov_mv, use_noise)
+        x = move(A,x,B,u, noise_cov_mv, use_noise, noise_type, cap_acc)
         if verbose: print("posn, vel = " + str(x[0]) + ', ' + str(x[1]))
-        z = measure(C,x, noise_cov_ms, use_noise)
+        z = measure(C,x, noise_cov_ms, use_noise, noise_type, cap_acc)
 
-        mean, covar, K = stoch_control.kalman_filter(mean, covar, u, z, x, A,B,C, noise_cov_mv, noise_cov_ms, control)
+        mean, covar, K = stoch_control.kalman_filter(mean, covar, u, z, x, A,B,C, noise_cov_mv, noise_cov_ms, control, cap_acc)
         Ks.append(K)
         xs.append(x)
         xestims.append(mean)
@@ -42,44 +43,71 @@ def run(scen_choice, target_trajectory, run_name, control, gain_choice, use_nois
     plot.state_estim(run_name, xs,xestims,targets, control,scen_choice,gain_choice, use_noise)
     plot.key(run_name)
     plot.control_err(run_name, us, estim_errs, actual_errs, targets, control, scen_choice, gain_choice, use_noise)
-    plot.Kalman_weight(run_name, Ks, control, scen_choice, gain_choice, use_noise)
+    #plot.Kalman_weight(run_name, Ks, control, scen_choice, gain_choice, use_noise)
 
     return xestims, xs, targets
 
 
-def move(A,x,B,u, noise_cov_mv, use_noise):
-    noise_type = 'add'
+def move(A,x,B,u, noise_cov_mv, use_noise, noise_type, cap_acc):
+
     verbose = False
     if verbose:
         print("\nMOVE")
         print("x = " + str(x))
         print("u = " + str(u))
         print("mvmt no nosie: " + str(np.dot(A,x)) + " + " + str(np.dot(B,u)))
-    if use_noise:
-        R = np.array([np.random.normal(0,1) for i in range(len(x))])
-        if noise_type=='mult':
-            R = np.array([[np.random.normal(0,1) for i in range(len(x))] for j in range(len(x))])
-        noise = np.dot(R,noise_cov_mv)
 
+    if use_noise:
+        noise_mag = 1
+        R = gen_noise_matrix(noise_mag, noise_type, len(x))
+        noise = np.dot(R,noise_cov_mv)
     else: noise = np.array([0 for i in range(len(x))])
     x = x + np.dot(B,u)
-    if noise_type == 'add':
-        x = np.dot(A,x) + noise
-    elif noise_type == 'mult':
-        x = np.dot(np.dot(A,x), noise)
-    else: assert(False)
+    if cap_acc is not None and cap_acc !=0: x = enforce_acc_cap(cap_acc, x)
+    x = np.dot(A,x) + noise
+    if cap_acc is not None and cap_acc !=0: x = enforce_acc_cap(cap_acc, x)
     #x = np.dot(A,x)+np.dot(B,u)+noise
     return x
 
-def measure(C,x, noise_cov_ms, use_noise):
+def measure(C,x, noise_cov_ms, use_noise, noise_type, cap_acc):
     if use_noise:
-        R = np.array([np.random.normal(0,4) for i in range(len(x))]) #TODO: magnitude should really be in covar matrix
+        noise_mag = 1
+        R = gen_noise_matrix(noise_mag, noise_type, len(x))
         noise = np.dot(R, noise_cov_ms)
     else: noise = np.array([0 for i in range(len(x))])
     z = np.dot(C,x)+noise
+
+    z = enforce_acc_cap(cap_acc, z)
+
     return z
 
+def gen_noise_matrix(noise_mag, noise_type, size):
+    if noise_type == 'normal' or noise_type == 'gaussian':
+        R = np.array([np.random.normal(0, noise_mag) for i in range(size)])
+    elif noise_type == 'uniform':
+        R = np.array([np.random.uniform(-noise_mag/2, noise_mag/2) for i in range(size)])
+    elif noise_type == 'exp' or noise_type == 'exponential':
+        R = np.array([np.random.exponential(noise_mag)-noise_mag for i in range(size)]) #centered ST mean=0
+    else: assert(False)
 
+    return R
+
+def enforce_acc_cap(cap,x):
+    #can use others besides x, ie z msmt and x_estim similarly constrained
+    if cap is None or cap==0 or cap=='None': return x
+
+    x_acc, y_acc = x[2], x[5]
+    if x_acc > 0:
+        x_acc = min(cap, x_acc)
+    else:
+        x_acc = max(-1 * cap, x_acc)
+
+    if y_acc > 0:
+        y_acc = min(cap, y_acc)
+    else:
+        y_acc = max(-1 * cap, y_acc)
+    x[2], x[5] = x_acc, y_acc
+    return x
 
 def calc_err(scenario,mean, x, iter, targets):
     #where mean is x_hat, ie using estim err
@@ -103,6 +131,22 @@ def calc_err(scenario,mean, x, iter, targets):
         #print('\ntargets, x_hat, x, estim err, actual err')
         #print(targets[iter],[mean[0],mean[2]], [x[0],x[2]], perceived_err, actual_err)
 
+
+    elif scen_d[0] == '2D3':
+        if iter==0: perceived_err, actual_err = 0,0
+        else:
+            x_err = (np.linalg.norm(targets[iter-1,0]-[mean[0]]))
+            y_err = (np.linalg.norm(targets[iter-1,1]-[mean[3]]))
+            perceived_err = np.linalg.norm(targets[iter-1]-[mean[0],mean[3]])
+            #perceived_err = x_err + y_err
+
+
+            x_err = (np.linalg.norm(targets[iter-1,0]-[x[0]]))
+            y_err = (np.linalg.norm(targets[iter-1,1]-[x[3]]))
+            #actual_err = x_err + y_err
+            actual_err = np.linalg.norm(targets[iter-1]-[x[0],x[3]])
+            #print("err x, y = " + str(x_err) + ', ' + str(y_err))
+
     else:
         if iter==0: perceived_err, actual_err = 0,0
         else:
@@ -118,26 +162,30 @@ if __name__ == "__main__":
     # scenarios: sit still, drift
     # controls: none, both, msmt, mvmt
 
-    controls = ['both'] #, 'ideal', 'none', 'msmt','mvmt']
-    gain_choice = ['None','P','PD','PI','PID'] #,'PD2', 'PID2'] #TODO: gain_choice should be set to 'None' (String-type, capital)
-    iters = 16
+    controls = ['both', 'ideal', 'none', 'msmt','mvmt'] #, 'both', 'none', 'msmt','mvmt']
+    gain_choice = ['None'] #,'PD','PI','PID'] #,'PD2', 'PID2'] #TODO: gain_choice should be set to 'None' (String-type, capital)
+    iters = 40
     verbose=False
     use_noises = [True]
     target_trajectory = None
     scen_choice = '2D3 drift' #'2D rd path with drift' #TODO: should be '2D3 '
     run_name = 'a_run' #to make separate directories, for example, during presentation
 
+    #TODO NEW PARAMS:
+    noise_type = 'exp' #uniform and exp allowed
+    cap_acc = 1 # set to 0 or None to ignore
+
     for control in controls:
         for gain in gain_choice:
             for use_noise in use_noises:
                 print("\n\nRUN: " + control + ', ' + gain + ', noise '  + str(use_noise) + "\n")
-                xestims, xs, targets = run(scen_choice, target_trajectory, run_name, control, gain, use_noise, iters, verbose=verbose)
+                xestims, xs, targets = run(scen_choice, target_trajectory, run_name, control, gain, use_noise, iters, noise_type, cap_acc, verbose=verbose)
 
     # a run without noise, just to check
-    xestims, xs, targets = run(scen_choice, target_trajectory, run_name, 'both', 'P', False, iters, verbose=verbose)
+    xestims, xs, targets = run(scen_choice, target_trajectory, run_name, 'both', 'None', False, iters, noise_type, cap_acc, verbose=verbose)
 
 
-    # NOTES:
+    # NOTES (poss obsolete by now...):
     # Line 127: xestims, xs, targets = run() is the main function you should use
 
     # for 2D, x = [x_position, x_velocity, y_position, y_velocity], same for xestims (what the robo believes)
