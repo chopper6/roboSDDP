@@ -5,7 +5,7 @@ import plot, stoch_control, scenario
 #TODO: bug on y axis, only when stoch
 #TODO: double check traj off-by-one (in scen + plots)
 
-def run(scen_choice, target_trajectory, run_name, control, gain_choice, use_noise, iters, noise_type, cap_acc, verbose=False):
+def run(scen_choice, target_trajectory, run_name, control, gain_choice, use_noise, iters, noise_type, cap_acc, mv_noise_mag, ms_noise_mag, verbose=False):
     xs, xestims, estim_errs, actual_errs, us, Ks = [],[],[], [], [],[]
     A,B,C, x, mean, covar, noise_cov_mv, noise_cov_ms, targets = scenario.generate(scen_choice, use_noise, iters)
     xs.append(x)
@@ -28,9 +28,9 @@ def run(scen_choice, target_trajectory, run_name, control, gain_choice, use_nois
             print("x_hat = " + str(mean))
             print("x = " + str(x))
 
-        x = move(A,x,B,u, noise_cov_mv, use_noise, noise_type, cap_acc)
+        x = move(A,x,B,u, noise_cov_mv, use_noise, noise_type, cap_acc, mv_noise_mag)
         if verbose: print("posn, vel = " + str(x[0]) + ', ' + str(x[1]))
-        z = measure(C,x, noise_cov_ms, use_noise, noise_type, cap_acc)
+        z = measure(C,x, noise_cov_ms, use_noise, noise_type, cap_acc, ms_noise_mag)
 
         mean, covar, K = stoch_control.kalman_filter(mean, covar, u, z, x, A,B,C, noise_cov_mv, noise_cov_ms, control, cap_acc)
         Ks.append(K)
@@ -43,12 +43,12 @@ def run(scen_choice, target_trajectory, run_name, control, gain_choice, use_nois
     plot.state_estim(run_name, xs,xestims,targets, control,scen_choice,gain_choice, use_noise)
     plot.key(run_name)
     plot.control_err(run_name, us, estim_errs, actual_errs, targets, control, scen_choice, gain_choice, use_noise)
-    #plot.Kalman_weight(run_name, Ks, control, scen_choice, gain_choice, use_noise)
+    plot.Kalman_weight(run_name, Ks, control, scen_choice, gain_choice, use_noise)
 
     return xestims, xs, targets
 
 
-def move(A,x,B,u, noise_cov_mv, use_noise, noise_type, cap_acc):
+def move(A,x,B,u, noise_cov_mv, use_noise, noise_type, cap_acc, mv_noise_mag):
 
     verbose = False
     if verbose:
@@ -58,23 +58,23 @@ def move(A,x,B,u, noise_cov_mv, use_noise, noise_type, cap_acc):
         print("mvmt no nosie: " + str(np.dot(A,x)) + " + " + str(np.dot(B,u)))
 
     if use_noise:
-        noise_mag = 1
-        R = gen_noise_matrix(noise_mag, noise_type, len(x))
-        noise = np.dot(R,noise_cov_mv)
+        R = gen_noise_matrix(mv_noise_mag, noise_type, len(x))
+        noise = np.dot(noise_cov_mv,R)
     else: noise = np.array([0 for i in range(len(x))])
     x = x + np.dot(B,u)
     if cap_acc is not None and cap_acc !=0: x = enforce_acc_cap(cap_acc, x)
     x = np.dot(A,x) + noise
+    #print("\nmvmt noise = " + str(noise))
     if cap_acc is not None and cap_acc !=0: x = enforce_acc_cap(cap_acc, x)
     #x = np.dot(A,x)+np.dot(B,u)+noise
     return x
 
-def measure(C,x, noise_cov_ms, use_noise, noise_type, cap_acc):
+def measure(C,x, noise_cov_ms, use_noise, noise_type, cap_acc, ms_noise_mag):
     if use_noise:
-        noise_mag = 1
-        R = gen_noise_matrix(noise_mag, noise_type, len(x))
-        noise = np.dot(R, noise_cov_ms)
+        R = gen_noise_matrix(ms_noise_mag, noise_type, len(x))
+        noise = np.dot(noise_cov_ms,R)
     else: noise = np.array([0 for i in range(len(x))])
+    #print("measure noise = " + str(noise))
     z = np.dot(C,x)+noise
 
     z = enforce_acc_cap(cap_acc, z)
@@ -172,17 +172,18 @@ if __name__ == "__main__":
     run_name = 'a_run' #to make separate directories, for example, during presentation
 
     #TODO NEW PARAMS:
-    noise_type = 'exp' #uniform and exp allowed
-    cap_acc = 1 # set to 0 or None to ignore
+    noise_type = 'normal' #uniform and exp allowed
+    cap_acc = 0 # set to 0 or None to ignore
+    mv_noise_mag, ms_noise_mag = .02, 1 #rough suggestions
 
     for control in controls:
         for gain in gain_choice:
             for use_noise in use_noises:
                 print("\n\nRUN: " + control + ', ' + gain + ', noise '  + str(use_noise) + "\n")
-                xestims, xs, targets = run(scen_choice, target_trajectory, run_name, control, gain, use_noise, iters, noise_type, cap_acc, verbose=verbose)
+                xestims, xs, targets = run(scen_choice, target_trajectory, run_name, control, gain, use_noise, iters, noise_type, cap_acc, mv_noise_mag, ms_noise_mag, verbose=verbose)
 
     # a run without noise, just to check
-    xestims, xs, targets = run(scen_choice, target_trajectory, run_name, 'both', 'None', False, iters, noise_type, cap_acc, verbose=verbose)
+    xestims, xs, targets = run(scen_choice, target_trajectory, run_name, 'both', 'None', False, iters, noise_type, cap_acc,mv_noise_mag, ms_noise_mag, verbose=verbose)
 
 
     # NOTES (poss obsolete by now...):

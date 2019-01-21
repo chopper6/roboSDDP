@@ -122,9 +122,7 @@ def generate(scenario, use_noise, iters):
         targets = np.array([[i+1,i+1] for i in range(iters+2)])
         x0, mean = [targets[0,0], 0,0,targets[0,1],0,0],[targets[0,0], 0,0,targets[0,1],0,0]
 
-        noise_cov_mv, noise_cov_ms = .2*np.eye(6), .8*np.eye(6)
-        #noise_cov_mv = noise_cov_mv.astype(float)*.1
-
+        noise_cov_mv, noise_cov_ms = 1*np.eye(6), 1*np.eye(6)
 
     elif scenario == '2D3 correlated axis':
         A, B, C = np.array([[1,1,0,0,0,0], [0,1,1,0,0,0],[0,0,1,0,0,0],[0,0,0,1,1,0],[0,0,0,0,1,1],[0,0,0,0,0,1]])\
