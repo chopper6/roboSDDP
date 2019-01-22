@@ -124,7 +124,7 @@ def generate(scenario, use_noise, iters):
 
         noise_cov_mv, noise_cov_ms = 1*np.eye(6), 1*np.eye(6)
 
-    elif scenario == '2D3 correlated axis':
+    elif scenario == '2D3 drift correlated axis':
         A, B, C = np.array([[1,1,0,0,0,0], [0,1,1,0,0,0],[0,0,1,0,0,0],[0,0,0,1,1,0],[0,0,0,0,1,1],[0,0,0,0,0,1]])\
             , np.array([[0 for i in range(6)], [0 for i in range(6)],[0,0,1,0,0,0],[0 for i in range(6)],[0 for i in range(6)],[0,0,0,0,0,1]])\
             , np.eye(6)
@@ -137,6 +137,29 @@ def generate(scenario, use_noise, iters):
 
         noise_cov_mv, noise_cov_ms = .2*np.array([[1,0,0,1,0,0], [0,1,0,0,1,0],[0,0,1,0,0,1],[1,0,0,1,0,0],[0,1,0,0,1,0],[0,0,1,0,0,1]]),\
                                      .8*np.array([[1,0,0,1,0,0], [0,1,0,0,1,0],[0,0,1,0,0,1],[1,0,0,1,0,0],[0,1,0,0,1,0],[0,0,1,0,0,1]])
+
+        noise_cov_mv, noise_cov_ms = np.array(
+            [[1, 0, 0, .5, 0, 0], [0, 1, 0, 0,.5, 0], [0, 0, 1, 0, 0, 0], [.5, 0, 0, 1, 0, 0], [0, .5, 0, 0, 1, 0],
+             [0, 0, 0, 0, 0, 1]]), \
+                                     np.array([[1, 0, 0, .5, 0, 0], [0, 1, 0, 0, .5, 0], [0, 0, 1, 0, 0, 0],
+                                                    [.5, 0, 0, 1, 0, 0], [0, .5, 0, 0, 1, 0], [0, 0, 0, 0, 0, 1]])
+
+        #noise_cov_mv = noise_cov_mv.astype(float)*.1
+
+    elif scenario == '2D3 drift ms corr':
+        A, B, C = np.array([[1,1,0,0,0,0], [0,1,1,0,0,0],[0,0,1,0,0,0],[0,0,0,1,1,0],[0,0,0,0,1,1],[0,0,0,0,0,1]])\
+            , np.array([[0 for i in range(6)], [0 for i in range(6)],[0,0,1,0,0,0],[0 for i in range(6)],[0 for i in range(6)],[0,0,0,0,0,1]])\
+            , np.eye(6)
+        covar = np.eye(6)
+        # static:
+        #targets = np.array([[0,0] for i in range(iters+2)])
+        #x0, mean = [1, 0,0,1,0,0],[1, 0,0,1,0,0]
+        targets = np.array([[i+1,i+1] for i in range(iters+2)])
+        x0, mean = [targets[0,0], 0,0,targets[0,1],0,0],[targets[0,0], 0,0,targets[0,1],0,0]
+
+        noise_cov_ms, noise_cov_mv = np.array(
+            [[1, 0, 0, .5, 0, 0], [0, 1, 0, 0,.5, 0], [0, 0, 1, 0, 0, 0], [.5, 0, 0, 1, 0, 0], [0, .5, 0, 0, 1, 0],
+             [0, 0, 0, 0, 0, 1]]), np.eye(6)
         #noise_cov_mv = noise_cov_mv.astype(float)*.1
 
 

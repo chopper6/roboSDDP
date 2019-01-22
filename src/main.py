@@ -168,12 +168,12 @@ if __name__ == "__main__":
     verbose=False
     use_noises = [True]
     target_trajectory = None
-    scen_choice = '2D3 drift' #'2D rd path with drift' #TODO: should be '2D3 '
+    scen_choice = '2D3 drift ms corr' #TODO: should be '2D3 '
     run_name = 'a_run' #to make separate directories, for example, during presentation
 
     #TODO NEW PARAMS:
     noise_type = 'normal' #uniform and exp allowed
-    cap_acc = 0 # set to 0 or None to ignore
+    cap_acc = 1 # set to 0 or None to ignore
     mv_noise_mag, ms_noise_mag = .02, 1 #rough suggestions
 
     for control in controls:

@@ -110,14 +110,14 @@ def Kalman_weight(run_name, Ks, control_name, scenario, gain_choice, use_noise):
     linestyles = ['-.', ':','--','-.', ':','--']
     n = len(Ks[0])
     for i in range(n):
-        for j in range(n):
-            if i==0:
-                a_label = titles[i] + ' --> ' + titles[j]
+        if i == 0 or i == 4:
+            for j in range(n):
+                a_label = titles[j] + ' weight '
                 plt.plot(ticks, Ks[:,i,j], color = colors[(i*n+j)%4], label = a_label, alpha=.5, linestyle = linestyles[(i*n+j)%6])
-    plt.title("Kalman Weight on Measurement Term for each State Variable")
-    plt.legend(title = 'Weight of measurement --> on estimate')
-    plt.savefig(plot_dir + str(label) + '_Kalman.png')
-    plt.clf()
+            plt.title("Kalman Weight on Measurement Term for " + str(titles[i]))
+            plt.legend(title = 'Weight of measurement --> on estimate')
+            plt.savefig(plot_dir + str(label) + str(titles[i]) + '_Kalman.png')
+            plt.clf()
 
 
 
